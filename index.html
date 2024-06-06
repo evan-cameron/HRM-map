@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaflet Map - Dartmouth, Nova Scotia</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    <style>
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+        #info {
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+        #info div {
+            margin-bottom: 10px;
+        }
+        #info label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        #info input, #info textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        #info button {
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info">
+        <div>
+            <label for="action">Select Action:</label>
+            <select id="action">
+                <option value="explore">Explore</option>
+                <option value="marker">Add Marker</option>
+                <option value="polygon">Create Polygon</option>
+            </select>
+        </div>
+        <div>
+            <label for="title">Title:</label>
+            <input type="text" id="title">
+        </div>
+        <div>
+            <label for="description">Description:</label>
+            <textarea id="description"></textarea>
+        </div>
+        <div>
+            <button id="save">Save</button>
+            <button id="delete">Delete</button>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    <script>
+        // Initialize the map and set its view to Dartmouth, Nova Scotia
+        var map = L.map('map').setView([44.67, -63.57], 13);
+
+        // Add OpenStreetMap tile layer
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        var selectedLatLng = null;
+        var polygonPoints = [];
+        var currentMarker = null;
+        var currentPolygon = null;
+
+        // Handle map click
+        function onMapClick(e) {
+            var action = document.getElementById('action').value;
+
+            if (action === 'explore') {
+                // Do nothing for explore
+                return;
+            }
+
+            selectedLatLng = e.latlng;
+
+            if (action === 'marker') {
+                // Add a temporary marker
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                }
+                currentMarker = L.marker(selectedLatLng).addTo(map);
+            } else if (action === 'polygon') {
+                // Add a point to the polygon
+                polygonPoints.push(selectedLatLng);
+                if (currentPolygon) {
+                    map.removeLayer(currentPolygon);
+                }
+                currentPolygon = L.polygon(polygonPoints).addTo(map);
+            }
+        }
+
+        map.on('click', onMapClick);
+
+        // Handle save button click
+        document.getElementById('save').addEventListener('click', function() {
+            var action = document.getElementById('action').value;
+            var title = document.getElementById('title').value;
+            var description = document.getElementById('description').value;
+
+            if (action === 'marker' && selectedLatLng) {
+                if (currentMarker) {
+                    currentMarker.bindPopup(`<b>${title}</b><br>${description}`).openPopup();
+                    currentMarker = null;
+                }
+            } else if (action === 'polygon' && polygonPoints.length > 2) {
+                if (currentPolygon) {
+                    currentPolygon.bindPopup(`<b>${title}</b><br>${description}`).openPopup();
+                    polygonPoints = [];
+                    currentPolygon = null;
+                }
+            }
+
+            // Clear inputs
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            selectedLatLng = null;
+        });
+
+        // Handle delete button click
+        document.getElementById('delete').addEventListener('click', function() {
+            var action = document.getElementById('action').value;
+
+            if (action === 'marker') {
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                    currentMarker = null;
+                }
+            } else if (action === 'polygon') {
+                if (currentPolygon) {
+                    map.removeLayer(currentPolygon);
+                    currentPolygon = null;
+                    polygonPoints = [];
+                }
+            }
+
+            // Clear inputs
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            selectedLatLng = null;
+        });
+    </script>
+</body>
+</html>
